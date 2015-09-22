@@ -1,0 +1,152 @@
+## Install Virtualization ##
+```
+# egrep '(vmx|svm)' /proc/cpuinfo
+
+# dnf -y groupinstall "Virtualization"
+# dnf -y install qemu-img libvirt-python libvirt-client qemu-kvm libvirt virt-install bridge-utils  
+# dnf -y install vagrant
+# dnf -y install vagrant-libvirt
+```
+
+## Check qemu/kvm ##
+```
+# virt-host-validate 
+  QEMU: Checking for hardware virtualization                                 : PASS
+  QEMU: Checking for device /dev/kvm                                         : PASS
+  QEMU: Checking for device /dev/vhost-net                                   : PASS
+  QEMU: Checking for device /dev/net/tun                                     : PASS
+   LXC: Checking for Linux >= 2.6.26                                         : PASS
+```
+
+## Install Vagrant ##
+```
+# dnf -y install vagrant
+# dnf -y install vagrant-libvirt
+```
+## Enable Nested Kvm ##
+```
+# cat /sys/module/kvm_intel/parameters/nested
+N
+
+#  vi /etc/modprobe.d/kvm-nested.conf 
+
+
+# create new  line
+options kvm_intel nested=1
+```
+
+## unload and  reload kernel module ##
+```
+# modprobe -r kvm_intel
+# modprobe kvm_intel 
+# cat /sys/module/kvm_intel/parameters/nested
+Y
+```
+
+## Check CPU model ##
+```
+# virsh capabilities | egrep "/model|/vendor" 
+      <model>Haswell-noTSX</model>
+      <vendor>Intel</vendor>
+      <model>selinux</model>
+      <model>dac</model>
+```
+
+## dump vagrant network ##
+create file name "vagrant-libvirt.xml"
+```
+<network connections='5' ipv6='yes'>
+  <name>vagrant-libvirt</name>
+  <uuid>fa517028-60f4-4ab6-85b8-2fcbb3a12f49</uuid>
+  <forward mode='nat'>
+    <nat>
+      <port start='1024' end='65535'/>
+    </nat>
+  </forward>
+  <bridge name='virbr1' stp='on' delay='0'/>
+  <mac address='52:54:00:68:dd:c8'/>
+  <ip address='192.168.121.1' netmask='255.255.255.0'>
+    <dhcp>
+      <range start='192.168.121.1' end='192.168.121.254'/>
+    </dhcp>
+  </ip>
+</network>
+```
+
+## dump vagrant network ##
+create file name "mgt_network.xml"
+
+```
+<network ipv6='yes'>
+  <name>mgt_network</name>
+  <uuid>288b9c41-c533-4197-bbc3-3c8aaac376cd</uuid>
+  <forward mode='nat'>
+    <nat>
+      <port start='1024' end='65535'/>
+    </nat>
+  </forward>
+  <bridge name='virbr2' stp='on' delay='0'/>
+  <mac address='52:54:00:b8:bf:6a'/>
+  <ip address='192.168.130.1' netmask='255.255.255.0'>
+  </ip>
+</network>
+```
+
+
+
+
+
+
+
+## run ##
+```
+# virsh net-define vagrant_network.xml
+# virsh net-define mgt_network.xml
+
+# virsh net-start  mgt_network
+# virsh net-start vagrant-libvirt
+
+# virsh net-autostart  mgt_network
+# virsh net-autostart vagrant-libvirt
+
+# virsh net-list --all
+
+# vagrant plugin list
+vagrant-libvirt (0.0.26, system)
+```
+Copy qcow2 file to /var/lib/libvirt/images/
+
+```
+# cp -v repo.qcow2 /var/lib/libvirt/images
+```
+
+
+
+Files will on Desktop
+## add repo repo.qcow2 ##
+```
+add by gui
+```
+## add vagrant box ##
+```
+# cd Desktop
+# ls
+...
+centos7.1-server.box 
+...
+# vagrant box add centos7.1-server centos7.1-server.box
+
+```
+start repo before vagrant up !!!!
+
+```
+# python -m SimpleHTTPServer 80
+```
+
+Next
+```
+# cd OpenStackResearch
+# vagrant up controller-1
+```
+
+
